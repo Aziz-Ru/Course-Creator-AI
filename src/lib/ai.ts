@@ -57,8 +57,16 @@ const b = `You are an expert at finding most relevant image for course .
   {{
     "search_term":"string"}}
 `;
+const c = `I will provide you with a transcript of a YouTube video. Please summarize the video in a clear, engaging, and concise way. Highlight the main topic, key points, and any important conclusions or tips the speaker mentions. Keep the summary under 200 words unless the content is very detailed.
+Constraints:
+  1. Respond ONLY with a VALID JSON object.
+  2. Use this EXACT structure:
+  {{
+    "summery":"string"
+  }}
+`;
 const imageWantTemp = `Please provide a good search term  for the course {courseName}. This search term fetch the unsplash API image for the course so make sure that is good search term`;
-
+const summery = `Please Give me summery of this transcript {transcript}`;
 export const prompt_template = ChatPromptTemplate.fromMessages([
   ["system", a],
   [
@@ -72,9 +80,18 @@ const imagePrompt = ChatPromptTemplate.fromMessages([
   ["human", imageWantTemp],
 ]);
 
+const summeryPrompt = ChatPromptTemplate.fromMessages([
+  ["system", c],
+  ["human", summery],
+]);
+
 export const courseChain = prompt_template
   .pipe(gemini)
   .pipe(new JsonOutputParser());
 
 export const imageChain = imagePrompt.pipe(gemini).pipe(new JsonOutputParser());
 // const res: any = await chain.invoke({ subject: "Backend Development" });
+
+export const summeryChain = summeryPrompt
+  .pipe(gemini)
+  .pipe(new JsonOutputParser());
