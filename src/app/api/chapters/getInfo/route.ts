@@ -24,42 +24,63 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { lessonId } = bodyParse.parse(body);
-
+    const cnt = 0;
     const chapter = await db.query.chapters.findFirst({
       where: eq(chapters.id, lessonId),
     });
 
     if (!chapter) {
-      return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
+      return NextResponse.json({ success: false }, { status: 404 });
     }
 
-    const { youtubeSearchQuery } = chapter;
+    const { youtubeSearchQuery, summery, videoId } = chapter;
+    let search_videoId: string | undefined = undefined;
 
-    const videoId: string = await getYoutubeVideoId(youtubeSearchQuery!);
-    if (!videoId) {
-      return NextResponse.json(
-        { error: "Failed to get video id" },
-        { status: 500 },
-      );
-    }
-    const transcript = await getTranscript(videoId);
+    if (!summery && !videoId) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (!search_videoId) {
+          try {
+            search_videoId = await getYoutubeVideoId(youtubeSearchQuery!);
+            if (search_videoId) break;
+          } catch (error) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+        }
+      }
+      if (search_videoId) {
+        const transcript = await getTranscript(search_videoId);
 
-    if (transcript) {
-      const { summery } = await summeryChain.invoke({ transcript });
-      if (summery) {
-        await db
-          .update(chapters)
-          .set({
-            videoId: videoId,
-            summery: summery,
-          })
-          .where(eq(chapters.id, lessonId));
+        await new Promise((res) => setTimeout(res, 1000));
+        if (transcript) {
+          let summeryResponse: { summery: string } | undefined = undefined;
+          for (let attempt = 0; attempt < 5; attempt++) {
+            if (!summeryResponse) {
+              summeryResponse = await summeryChain.invoke({
+                transcript,
+              });
+              if (summeryResponse) {
+                break;
+              }
+            } else {
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+          }
 
-        return NextResponse.json({ success: true }, { status: 200 });
+          if (summeryResponse!.summery) {
+            await db
+              .update(chapters)
+              .set({
+                videoId: search_videoId,
+                summery: summeryResponse!.summery,
+              })
+              .where(eq(chapters.id, lessonId));
+            return NextResponse.json({ success: true }, { status: 200 });
+          }
+        }
       }
     }
 
-    return NextResponse.json({ success: false }, { status: 500 });
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     // console.log(error);
     if (error instanceof z.ZodError) {

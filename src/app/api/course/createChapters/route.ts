@@ -22,11 +22,11 @@ export async function POST(req: NextRequest) {
     const res = createCourseSchema.parse(body);
     let unit = "";
     res.units.forEach((un) => {
-      unit += `${un} `;
+      unit += `${un},`;
     });
 
     const courseResponse: CourseOutline = await courseChain.invoke({
-      subject: res.title,
+      course: res.title,
       units: unit,
     });
     const { search_term } = await imageChain.invoke({ courseName: res.title });
@@ -65,8 +65,6 @@ export async function POST(req: NextRequest) {
           unitId: newmodule[0].id,
           name: lesson.lessonTitle,
           youtubeSearchQuery: lesson.youtubeQuery,
-          videoId: lesson.youtubeQuery,
-          summery: lesson.lessonDescription,
         });
       }
     }

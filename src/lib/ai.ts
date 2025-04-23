@@ -12,10 +12,9 @@ const a = `You are an expert course creator with extensive knowledge in curricul
   course outline based on the provided course name and user input. The outline should cater to the user's specified learning goals, skill level,
   and preferences,ensuring a clear progression from beginner to advanced topics. For each module, include:
   1. A **module title** that reflects the module's focus and a **brief description** summarizing its objectives and content.
-  2. 3-5 **lesson titles** with concise **lesson descriptions** that outline the specific skills or knowledge covered.
+  2. 5 to 10 **lesson titles**.
   3. A **YouTube search query** for each lesson to help users find relevant, high-quality video content to supplement their learning.
-  4. A **module-level learning outcome** that defines what the learner will achieve by completing the module.
-  5. A **recommended practice activity** for each lesson to reinforce learning through hands-on application.
+  
   Ensure the course:
   - Follows a logical progression, building on prior knowledge and increasing in complexity.
   - Incorporates modern tools, frameworks, and best practices relevant to the subject.
@@ -28,25 +27,20 @@ const a = `You are an expert course creator with extensive knowledge in curricul
   4. Use this EXACT structure:
   {{
     "courseName": "string",
-    "targetAudience": "string describing the intended learners (e.g., beginners, intermediate, professionals)",
-    "estimatedDuration": "string describing the approximate time to complete the course (e.g., 4 weeks, 10 hours)",
     "modules": [
       {{
         "moduleTitle": "string",
-        "moduleDescription": "string",
-        "learningOutcome": "string describing what learners will achieve",
         "lessons": [
           {{
             "lessonTitle": "string",
-            "lessonDescription": "string",
             "youtubeQuery": "string",
-            "practiceActivity": "string describing a hands-on task or project"
+            
           }}
         ]
       }}
     ]
   }}
-  5. Include at least 3 modules, with a minimum of 3 lessons per module.
+  5. Include at least 5 to 10 modules, with a minimum of 5 to 10 lessons per module depend on that module size.
   6. Ensure YouTube queries are specific enough to yield relevant results but broad enough to avoid overly niche content.
   7. Practice activities should be practical, achievable, and directly related to the lesson content.`;
 
@@ -55,7 +49,8 @@ const b = `You are an expert at finding most relevant image for course .
   1. Respond ONLY with a VALID JSON object.
   2. Use this EXACT structure:
   {{
-    "search_term":"string"}}
+    "search_term":"string"
+  }}
 `;
 const c = `I will provide you with a transcript of a YouTube video. Please summarize the video in a clear, engaging, and concise way. Highlight the main topic, key points, and any important conclusions or tips the speaker mentions. Keep the summary under 200 words unless the content is very detailed.
 Constraints:
@@ -71,7 +66,7 @@ export const prompt_template = ChatPromptTemplate.fromMessages([
   ["system", a],
   [
     "human",
-    "Want to Learn about this {subject} and  create chapters or modules about this {units} ",
+    "Want to Learn about this {course} and if these {units} is relevent to the course content you will  create  modules about this ",
   ],
 ]);
 
@@ -95,3 +90,11 @@ export const imageChain = imagePrompt.pipe(gemini).pipe(new JsonOutputParser());
 export const summeryChain = summeryPrompt
   .pipe(gemini)
   .pipe(new JsonOutputParser());
+
+/**
+ * 
+ * "targetAudience": "string describing the intended learners (e.g., beginners, intermediate, professionals)","estimatedDuration": "string describing the approximate time to complete the course (e.g., 4 weeks, 10 hours)",
+ * 
+
+
+**/

@@ -36,9 +36,11 @@ const SpecifiqCourse = async ({
       },
     },
   });
+
   if (!course) {
     redirect("/create-course");
   }
+  // console.log(course.units.map((unit) => unit.chapters));
   return (
     <div className="mx-auto my-16 flex max-w-xl flex-col items-start">
       <h5 className="text-secondary-foreground/60 text-sm uppercase">
