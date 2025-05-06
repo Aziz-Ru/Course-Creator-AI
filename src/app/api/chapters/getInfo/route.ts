@@ -1,16 +1,19 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { summeryChain } from "~/lib/ai";
-import { getTranscript, getYoutubeVideoId } from "~/lib/youtube";
+import { getSummeryResponse } from "~/lib/ai";
+import { getTranscript, GetYouTubeVideo } from "~/lib/youtube";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { chapters } from "~/server/db/schema";
+import { lessons } from "~/server/db/schema";
 
 const bodyParse = z.object({
   lessonId: z.string().uuid(),
 });
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,65 +27,88 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { lessonId } = bodyParse.parse(body);
-    const cnt = 0;
-    const chapter = await db.query.chapters.findFirst({
-      where: eq(chapters.id, lessonId),
+
+    const lesson = await db.query.lessons.findFirst({
+      where: eq(lessons.id, lessonId),
     });
 
-    if (!chapter) {
+    if (!lesson) {
       return NextResponse.json({ success: false }, { status: 404 });
     }
 
-    const { youtubeSearchQuery, summery, videoId } = chapter;
-    let search_videoId: string | undefined = undefined;
+    const { youtubeSearchQuery, success, videoId } = lesson;
+    console.log(success, videoId);
+    if (!success) {
+      // console.log("Requesting videoId");
+      try {
+        const { items } = await GetYouTubeVideo({
+          keyword: youtubeSearchQuery!,
+          limit: 1,
+          withPlaylist: false,
+          options: [{ type: "video" }],
+        });
+        const search_videoId: string = items[0]?.id;
 
-    if (!summery && !videoId) {
-      for (let attempt = 0; attempt < 5; attempt++) {
-        if (!search_videoId) {
-          try {
-            search_videoId = await getYoutubeVideoId(youtubeSearchQuery!);
-            if (search_videoId) break;
-          } catch (error) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-      }
-      if (search_videoId) {
-        const transcript = await getTranscript(search_videoId);
+        if (search_videoId) {
+          const transcript = await getTranscript(search_videoId);
 
-        await new Promise((res) => setTimeout(res, 1000));
-        if (transcript) {
-          let summeryResponse: { summery: string } | undefined = undefined;
-          for (let attempt = 0; attempt < 5; attempt++) {
-            if (!summeryResponse) {
-              summeryResponse = await summeryChain.invoke({
-                transcript,
-              });
-              if (summeryResponse) {
-                break;
-              }
-            } else {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
+          await sleep(500);
+          if (transcript) {
+            const summery = await getSummeryResponse(transcript);
+            // console.log("summery", summery);
+            if (summery) {
+              // console.log(lessonId);
+              // console.log(lessons.id);
+              // console.log(search_videoId);
+              await db
+                .update(lessons)
+                .set({
+                  videoId: search_videoId,
+                  summery: summery,
+                  success: true,
+                })
+                .where(eq(lessons.id, lessonId));
+              // console.log("Saved successfully");
+              return NextResponse.json({ success: true }, { status: 200 });
             }
-          }
-
-          if (summeryResponse!.summery) {
+          } else {
             await db
-              .update(chapters)
+              .update(lessons)
               .set({
                 videoId: search_videoId,
-                summery: summeryResponse!.summery,
+                success: true,
               })
-              .where(eq(chapters.id, lessonId));
-            return NextResponse.json({ success: true }, { status: 200 });
+              .where(eq(lessons.id, lessonId));
           }
+        } else {
+          // console.log("No video found");
+          return NextResponse.json(
+            {
+              error: "No video found",
+              success: false,
+            },
+            { status: 404 },
+          );
         }
+        return NextResponse.json({
+          error: "No video found",
+        });
+      } catch (error) {
+        return NextResponse.json(
+          {
+            error: "Failed to fetch videoId Or Youtube request exceeded",
+            success: false,
+          },
+          { status: 500 },
+        );
       }
-    }
+    } else {
+      console.log("Already have videoId", videoId, success);
 
-    return NextResponse.json({ success: true }, { status: 200 });
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
   } catch (error) {
-    // console.log(error);
+    console.log(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }

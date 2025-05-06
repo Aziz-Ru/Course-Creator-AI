@@ -3,11 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ZodError } from "zod";
 import { courseChain, imageChain } from "~/lib/ai";
 import { getUnsplashImage } from "~/lib/getImage";
+import type { CourseOutline } from "~/lib/type";
 import { createCourseSchema } from "~/lib/validators/course";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { chapters, courses, units } from "~/server/db/schema";
-import type { CourseOutline } from "./type";
+import { courses, lessons, modules } from "~/server/db/schema";
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const course = await db
       .insert(courses)
       .values({
-        title: courseResponse.courseName,
+        name: courseResponse.courseName,
         image: imgLink,
         createdById: session.user.id,
       })
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
     for (const unit of courseResponse.modules) {
       const newmodule = await db
-        .insert(units)
+        .insert(modules)
         .values({
           name: unit.moduleTitle,
           courseId: course[0].id,
@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
         );
       }
       for (const lesson of unit.lessons) {
-        await db.insert(chapters).values({
-          unitId: newmodule[0].id,
+        await db.insert(lessons).values({
+          moduleId: newmodule[0].id,
           name: lesson.lessonTitle,
           youtubeSearchQuery: lesson.youtubeQuery,
         });

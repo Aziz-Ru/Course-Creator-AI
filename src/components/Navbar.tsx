@@ -20,7 +20,7 @@ const Navbar = async () => {
           </Link>
           {session?.user && (
             <>
-              <Link href={"/create-course"} className="hover:underline">
+              <Link href={"/create"} className="hover:underline">
                 Create Course
               </Link>
             </>

@@ -40,7 +40,7 @@ const a = `You are an expert course creator with extensive knowledge in curricul
       }}
     ]
   }}
-  5. Include at least 5 to 10 modules, with a minimum of 5 to 10 lessons per module depend on that module size.
+  5. Include at least 3 to 10 modules, with a minimum of 5 to 10 lessons per module depend on that module size.
   6. Ensure YouTube queries are specific enough to yield relevant results but broad enough to avoid overly niche content.
   7. Practice activities should be practical, achievable, and directly related to the lesson content.`;
 
@@ -61,7 +61,7 @@ Constraints:
   }}
 `;
 const imageWantTemp = `Please provide a good search term  for the course {courseName}. This search term fetch the unsplash API image for the course so make sure that is good search term`;
-const summery = `Please Give me summery of this transcript {transcript}`;
+const summery = `Please Give me summery of this transcript  {transcript}`;
 export const prompt_template = ChatPromptTemplate.fromMessages([
   ["system", a],
   [
@@ -98,3 +98,20 @@ export const summeryChain = summeryPrompt
 
 
 **/
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function getSummeryResponse(transcript: string): Promise<string> {
+  let result: string | undefined = undefined;
+  while (!result) {
+    try {
+      const response: { summery: string } = await summeryChain.invoke({
+        transcript: transcript,
+      });
+      result = response.summery;
+    } catch (error) {
+      await sleep(1500);
+    }
+  }
+  return result;
+}

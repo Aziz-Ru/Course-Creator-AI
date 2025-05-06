@@ -4,13 +4,15 @@ import React from "react";
 import Lesson, { type LesssonCardHandler } from "./Lesson";
 import { Button, buttonVariants } from "./ui/button";
 import { Separator } from "./ui/separator";
+import { Spinner } from "./ui/spinner";
 export interface Chapter {
   id: string;
   unitId: string;
-  name: string;
-  youtubeSearchQuery: string;
-  videoId: string;
-  summery: string;
+  name: string | null;
+  youtubeSearchQuery: string | null;
+  videoId: string | null;
+  summery: string | null;
+  success: boolean;
 }
 
 export interface Unit {
@@ -21,13 +23,14 @@ export interface Unit {
 
 export interface CourseWithUnitsAndChapters {
   id: string;
-  title: string;
-  image: string;
+  name: string | null;
+  image: string | null;
   createdById: string;
   units: Unit[];
 }
 
 const Modules = ({ course }: { course: CourseWithUnitsAndChapters }) => {
+  const [isLoading, setIsLoading] = React.useState(false);
   const chapterRef = React.useMemo(() => {
     const ref: Record<string, React.RefObject<LesssonCardHandler | null>> = {};
 
@@ -40,8 +43,11 @@ const Modules = ({ course }: { course: CourseWithUnitsAndChapters }) => {
 
     return ref;
   }, [course]);
-
-  console.log(chapterRef);
+  const isAllSuccess = React.useMemo(() => {
+    return course.units.every((unit) =>
+      unit.chapters.every((chapter) => chapter.success),
+    );
+  }, [course]);
 
   return (
     <div className="mt-4 w-full">
@@ -72,22 +78,40 @@ const Modules = ({ course }: { course: CourseWithUnitsAndChapters }) => {
       <div className="mt-5 flex items-center justify-center gap-4">
         <Separator className="flex-[1]" />
         <div className="mx-4 flex items-center">
-          <Link href={"/create-course"} className={buttonVariants()}>
+          <Link
+            href={"/create-course"}
+            aria-disabled={isLoading}
+            className={buttonVariants()}
+          >
             Back
           </Link>
+          {isAllSuccess ? (
+            <Link
+              className={buttonVariants({
+                className: "ml-4 font-semibold",
+              })}
+              href={`/course/${course.id}/0/0`}
+            >
+              Continue
+            </Link>
+          ) : (
+            <Button
+              className="ml-4"
+              disabled={isLoading}
+              onClick={() => {
+                setIsLoading(true);
+                Object.values(chapterRef).forEach((ref) => {
+                  if (ref.current) {
+                    ref.current.triggerLoad();
+                  }
+                });
 
-          <Button
-            className="ml-4"
-            onClick={() => {
-              Object.values(chapterRef).forEach((ref) => {
-                if (ref.current) {
-                  ref.current.triggerLoad();
-                }
-              });
-            }}
-          >
-            Generate
-          </Button>
+                setIsLoading(false);
+              }}
+            >
+              {isLoading ? <Spinner /> : "Load All Chapters"}
+            </Button>
+          )}
         </div>
         <Separator className="flex-[1]" />
       </div>

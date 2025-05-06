@@ -20,6 +20,7 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
+import { Spinner } from "./ui/spinner";
 // type Props = {};
 
 type InputType = z.infer<typeof createCourseSchema>;
@@ -45,7 +46,7 @@ const CreateCourseForm = () => {
     createCourse(data, {
       onSuccess: ({ id }) => {
         toast("Course Created Successfully");
-        void router.push(`/create-course/${id}`);
+        void router.push(`/create/${id}`);
       },
       onError: (err) => {
         console.log(err);
@@ -146,7 +147,7 @@ const CreateCourseForm = () => {
             type="submit"
             disabled={isPending}
           >
-            Lets GO!
+            {isPending ? <Spinner /> : "Lets GO!"}
           </Button>
         </form>
       </Form>

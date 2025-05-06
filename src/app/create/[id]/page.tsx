@@ -8,7 +8,7 @@ import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import { courses } from "~/server/db/schema";
 
-const SpecifiqCourse = async ({
+const CreateCourse = async ({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -46,7 +46,7 @@ const SpecifiqCourse = async ({
       <h5 className="text-secondary-foreground/60 text-sm uppercase">
         Course Name
       </h5>
-      <h1 className="text-5xl font-bold">{course.title}</h1>
+      <h1 className="text-5xl font-bold">{course.name}</h1>
       <Provider>
         <Modules course={course} />
       </Provider>
@@ -54,4 +54,4 @@ const SpecifiqCourse = async ({
   );
 };
 
-export default SpecifiqCourse;
+export default CreateCourse;

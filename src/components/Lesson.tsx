@@ -1,8 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { forwardRef, useImperativeHandle, useState } from "react";
+import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 import type { Chapter } from "./Modules";
+import { Spinner } from "./ui/spinner";
 
 export type LesssonCardHandler = {
   triggerLoad: () => void;
@@ -14,7 +16,7 @@ export type LessonCardProps = {
 
 const Lesson = forwardRef<LesssonCardHandler, LessonCardProps>(
   ({ lesson, chIndex }, ref) => {
-    const [success, setSuccess] = useState<boolean>(false);
+    const [success, setSuccess] = useState<boolean>(lesson.success);
     const { mutate: getChapterInfo, isPending } = useMutation({
       mutationFn: async () => {
         const response = await axios.post("/api/chapters/getInfo", {
@@ -27,11 +29,17 @@ const Lesson = forwardRef<LesssonCardHandler, LessonCardProps>(
 
     useImperativeHandle(ref, () => ({
       async triggerLoad() {
-        getChapterInfo(undefined, {
-          onSuccess: (data) => {
-            setSuccess(true);
-          },
-        });
+        if (!lesson.success) {
+          getChapterInfo(undefined, {
+            onSuccess: (data) => {
+              setSuccess(true);
+            },
+            onError: (data) => {
+              setSuccess(false);
+              toast.error("Exceeding Request Limit of Youtube", {});
+            },
+          });
+        }
       },
     }));
 
@@ -43,10 +51,11 @@ const Lesson = forwardRef<LesssonCardHandler, LessonCardProps>(
         )}
         key={lesson.id}
       >
-        <div className="">
+        <div className="flex w-full justify-between">
           <h5>
             Chapters {chIndex}: {lesson.name}
           </h5>
+          {isPending && <Spinner />}
         </div>
       </div>
     );

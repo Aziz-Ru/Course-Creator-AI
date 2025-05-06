@@ -92,12 +92,16 @@ export const courses = createTable(
   "course",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    title: d.varchar({ length: 256 }),
+    name: d.varchar({ length: 256 }).notNull(),
     image: d.varchar({ length: 256 }),
     createdById: d
       .varchar("user_id", { length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: d
+      .timestamp()
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
   }),
   (t) => [
     foreignKey({
@@ -109,11 +113,11 @@ export const courses = createTable(
   ],
 );
 
-export const units = createTable(
-  "units",
+export const modules = createTable(
+  "modules",
   (d) => ({
     id: d.uuid().primaryKey().defaultRandom(),
-    name: d.varchar({ length: 256 }),
+    name: d.varchar({ length: 256 }).notNull(),
     courseId: d
       .uuid("course_id")
       .notNull()
@@ -129,52 +133,53 @@ export const units = createTable(
   ],
 );
 
-export const chapters = createTable(
-  "chapters",
+export const lessons = createTable(
+  "lessons",
   (d) => ({
     id: d.uuid("id").primaryKey().defaultRandom(),
-    unitId: d
-      .uuid("unit_id")
+    moduleId: d
+      .uuid("module_id")
       .notNull()
-      .references(() => units.id, { onDelete: "cascade" }),
-    name: d.varchar("chapter_name", { length: 256 }).notNull(),
+      .references(() => modules.id, { onDelete: "cascade" }),
+    name: d.varchar("lesson_name", { length: 256 }).notNull(),
     youtubeSearchQuery: d.varchar({ length: 256 }),
     videoId: d.varchar({ length: 256 }),
     summery: d.text(),
+    success: d.boolean("success").default(false),
   }),
   (t) => [
     foreignKey({
-      columns: [t.unitId],
-      foreignColumns: [units.id],
+      columns: [t.moduleId],
+      foreignColumns: [modules.id],
       name: "unit_id_fk",
     }),
-    index("unit_id_idx").on(t.unitId),
+    index("unit_id_idx").on(t.moduleId),
   ],
 );
 
-export const Questions = createTable(
-  "questions",
-  (d) => ({
-    id: d.uuid("id").primaryKey().defaultRandom(),
-    chapterId: d
-      .uuid("chapter_id")
-      .notNull()
-      .references(() => chapters.id, {
-        onDelete: "cascade",
-      }),
-    question: d.text("question"),
-    answer: d.text("answer"),
-    options: d.jsonb(),
-  }),
-  (t) => [
-    index("chapter_id_idx").on(t.chapterId),
-    foreignKey({
-      columns: [t.chapterId],
-      foreignColumns: [chapters.id],
-      name: "chapter_id_fk",
-    }),
-  ],
-);
+// export const Questions = createTable(
+//   "questions",
+//   (d) => ({
+//     id: d.uuid("id").primaryKey().defaultRandom(),
+//     chapterId: d
+//       .uuid("chapter_id")
+//       .notNull()
+//       .references(() => modules.id, {
+//         onDelete: "cascade",
+//       }),
+//     question: d.text("question"),
+//     answer: d.text("answer"),
+//     options: d.jsonb(),
+//   }),
+//   (t) => [
+//     index("chapter_id_idx").on(t.chapterId),
+//     foreignKey({
+//       columns: [t.chapterId],
+//       foreignColumns: [chapters.id],
+//       name: "chapter_id_fk",
+//     }),
+//   ],
+// );
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
@@ -187,28 +192,27 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
     fields: [courses.createdById],
     references: [users.id],
   }),
-  units: many(units),
+  units: many(modules),
 }));
 
-export const unitsRelations = relations(units, ({ one, many }) => ({
+export const moduleRelations = relations(modules, ({ one, many }) => ({
   course: one(courses, {
-    fields: [units.courseId],
+    fields: [modules.courseId],
     references: [courses.id],
   }),
-  chapters: many(chapters),
+  chapters: many(lessons),
 }));
 
-export const chaptersRelations = relations(chapters, ({ one, many }) => ({
-  unit: one(units, {
-    fields: [chapters.unitId],
-    references: [units.id],
+export const lessonRelations = relations(lessons, ({ one }) => ({
+  unit: one(modules, {
+    fields: [lessons.moduleId],
+    references: [modules.id],
   }),
-  questions: many(Questions),
 }));
 
-export const QuestionsRelations = relations(Questions, ({ one }) => ({
-  chapter: one(chapters, {
-    fields: [Questions.chapterId],
-    references: [chapters.id],
-  }),
-}));
+// export const QuestionsRelations = relations(Questions, ({ one }) => ({
+//   chapter: one(chapters, {
+//     fields: [Questions.chapterId],
+//     references: [chapters.id],
+//   }),
+// }));
