@@ -2,6 +2,11 @@
 
 This project is a Course Creator AI application built with the T3 Stack (Next.js, NextAuth.js, Prisma/Drizzle, Tailwind CSS, tRPC). It allows users to create courses based on a single prompt.
 
+
+<img src="/img/img-1cgai.png" />
+<img src="/img/img-2cgai.png" />
+<img src="/img/img-3cgai.png" />
+
 ### Project Structure and Routes
 
 API Routes
